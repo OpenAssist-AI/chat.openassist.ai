@@ -35,17 +35,18 @@
 
   <!-- Header -->
   <header class="flex justify-between items-center px-6 py-4 bg-[#111] border-b border-gray-800">
-    <img src="Asset 2.svg" alt="OpenAssist Logo" style="height: 26px;" />
-    <button class="text-sm bg-white text-black px-4 py-2 rounded-full font-medium hover:bg-gray-200 transition">New Chat</button>
+    <div>
+      <img src="Asset 2.svg" alt="OpenAssist Logo" style="height: 26px; width: auto;" />
+    </div>
+    <button onclick="newChat()" class="text-sm bg-white text-black px-4 py-2 rounded-full font-medium hover:bg-gray-200 transition">New Chat</button>
   </header>
 
-  <!-- Chat Area -->
+  <!-- Chat area -->
   <main id="chatBox" class="flex-grow overflow-y-auto px-4 py-6 flex flex-col space-y-2"></main>
 
   <!-- Footer -->
   <footer class="px-4 py-4 bg-[#1e1e1e] border-t border-gray-700">
     <div class="flex flex-wrap md:flex-nowrap items-center gap-3 bg-[#2c2c2c] px-4 py-3 rounded-full shadow-inner">
-      <button class="text-xl text-white">+</button>
       <textarea id="userInput" rows="1" placeholder="Ask anything..." class="flex-grow bg-transparent resize-none outline-none text-white text-sm px-2 py-1"></textarea>
       <button onclick="sendMessage()" class="bg-white text-black text-sm px-3 py-1 rounded-full hover:bg-gray-100 transition">Send</button>
       <button id="whatsappBtn" class="bg-white text-black px-3 py-1 rounded-full text-sm hover:bg-gray-100">WhatsApp</button>
@@ -57,6 +58,12 @@
 <script>
   const chatBox = document.getElementById("chatBox");
   const userInput = document.getElementById("userInput");
+
+  // Clears the chat and resets input
+  function newChat() {
+    chatBox.innerHTML = "";
+    userInput.value = "";
+  }
 
   function appendMessage(content, sender) {
     const msg = document.createElement("div");
@@ -77,7 +84,9 @@
     try {
       const response = await fetch("/api/chat", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json"
+        },
         body: JSON.stringify({
           messages: [
             { role: "system", content: "You are OpenAssist AI, a helpful assistant." },
@@ -88,14 +97,21 @@
 
       const data = await response.json();
       const reply = data.choices?.[0]?.message?.content || "Oops, something went wrong.";
-      chatBox.removeChild(chatBox.lastChild); // remove "Thinking..."
-      appendMessage(reply, "bot");
-
-    } catch (error) {
       chatBox.removeChild(chatBox.lastChild);
-      appendMessage("Error: " + error.message, "bot");
+      appendMessage(reply, "bot");
+    } catch (err) {
+      console.error("API error:", err);
+      chatBox.removeChild(chatBox.lastChild);
+      appendMessage("An error occurred. Check the console log for details.", "bot");
     }
   }
+
+  userInput.addEventListener("keypress", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  });
 
   document.getElementById("whatsappBtn").addEventListener("click", () => {
     const lastBot = [...chatBox.querySelectorAll(".bot")].pop();
@@ -113,14 +129,6 @@
       window.open(`mailto:?subject=${subject}&body=${body}`, "_blank");
     }
   });
-
-  userInput.addEventListener("keypress", (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
-  });
 </script>
-
 </body>
 </html>
