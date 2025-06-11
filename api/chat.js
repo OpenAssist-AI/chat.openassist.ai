@@ -6,16 +6,22 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Missing messages in request body" });
     }
 
+    const apiKey = process.env.OPENAI_API_KEY;
+
+    if (!apiKey) {
+      return res.status(500).json({ error: "Missing OpenAI API Key" });
+    }
+
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`
+        "Authorization": `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
         model: "gpt-4o",
-        messages
-      })
+        messages,
+      }),
     });
 
     const data = await response.json();
@@ -26,6 +32,7 @@ export default async function handler(req, res) {
     }
 
     res.status(200).json(data);
+
   } catch (err) {
     console.error("Server error:", err);
     res.status(500).json({ error: "Internal server error", detail: err.message });
