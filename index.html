@@ -73,76 +73,50 @@
     <p class="text-center text-xs text-gray-500 mt-2">OpenAssist AI can make mistakes. Check important info.</p>
   </footer>
 
-  <script>
-    const chatBox = document.getElementById("chatBox");
-    const userInput = document.getElementById("userInput");
+<script>
+  const chatBox = document.getElementById("chatBox");
+  const userInput = document.getElementById("userInput");
 
-    const messages = [
-      {
-        role: "system",
-        content: "You are OpenAssist AI, a helpful and productive assistant."
-      }
-    ];
+  async function sendMessage() {
+    const input = userInput.value.trim();
+    if (!input) return;
 
-    function appendMessage(content, sender) {
-      const msg = document.createElement("div");
-      msg.className = "message " + sender;
-      msg.textContent = content;
-      chatBox.appendChild(msg);
-      chatBox.scrollTop = chatBox.scrollHeight;
+    appendMessage(input, "user");
+    userInput.value = "";
+
+    appendMessage("Thinking...", "bot");
+
+    const response = await fetch("/api/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        messages: [
+          { role: "system", content: "You are OpenAssist AI, a helpful assistant." },
+          { role: "user", content: input }
+        ]
+      })
+    });
+
+    const data = await response.json();
+    const reply = data.choices?.[0]?.message?.content || "Oops, something went wrong.";
+    chatBox.removeChild(chatBox.lastChild);
+    appendMessage(reply, "bot");
+  }
+
+  function appendMessage(content, sender) {
+    const msg = document.createElement("div");
+    msg.className = "message " + sender;
+    msg.textContent = content;
+    chatBox.appendChild(msg);
+    chatBox.scrollTop = chatBox.scrollHeight;
+  }
+
+  userInput.addEventListener("keypress", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
     }
-
-    async function sendMessage() {
-      const input = userInput.value.trim();
-      if (!input) return;
-      appendMessage(input, "user");
-      messages.push({ role: "user", content: input });
-      userInput.value = "";
-
-      appendMessage("Thinking...", "bot");
-
-      const response = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": "Bearer YOUR_API_KEY"
-        },
-        body: JSON.stringify({
-          model: "gpt-4o",
-          messages: messages
-        })
-      });
-
-      const data = await response.json();
-      const reply = data.choices?.[0]?.message?.content || "Oops, something went wrong.";
-      chatBox.removeChild(chatBox.lastChild);
-      appendMessage(reply, "bot");
-      messages.push({ role: "assistant", content: reply });
-    }
-
-    document.getElementById("whatsappBtn").addEventListener("click", () => {
-      const lastBot = [...chatBox.querySelectorAll(".bot")].pop();
-      if (lastBot) {
-        const text = encodeURIComponent(lastBot.textContent);
-        window.open(`https://wa.me/?text=${text}`, "_blank");
-      }
-    });
-
-    document.getElementById("emailBtn").addEventListener("click", () => {
-      const lastBot = [...chatBox.querySelectorAll(".bot")].pop();
-      if (lastBot) {
-        const subject = encodeURIComponent("Message from OpenAssist AI");
-        const body = encodeURIComponent(lastBot.textContent);
-        window.open(`mailto:?subject=${subject}&body=${body}`, "_blank");
-      }
-    });
-
-    userInput.addEventListener("keypress", (e) => {
-      if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
-        sendMessage();
-      }
-    });
-  </script>
-</body>
-</html>
+  });
+</script>
