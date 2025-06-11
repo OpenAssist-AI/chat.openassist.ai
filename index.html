@@ -29,28 +29,17 @@
       background-color: #444;
       align-self: flex-start;
     }
-    .circle-icon {
-      background: #e5e5e5;
-      border-radius: 9999px;
-      width: 32px;
-      height: 32px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
   </style>
 </head>
 <body class="flex flex-col h-screen">
 
   <!-- Header -->
   <header class="flex justify-between items-center px-6 py-4 bg-[#111] border-b border-gray-800">
-    <div>
-      <img src="Asset 2.svg" alt="OpenAssist Logo" style="height: 26px; width: auto;" />
-    </div>
+    <img src="Asset 2.svg" alt="OpenAssist Logo" style="height: 26px;" />
     <button class="text-sm bg-white text-black px-4 py-2 rounded-full font-medium hover:bg-gray-200 transition">New Chat</button>
   </header>
 
-  <!-- Chat area -->
+  <!-- Chat Area -->
   <main id="chatBox" class="flex-grow overflow-y-auto px-4 py-6 flex flex-col space-y-2"></main>
 
   <!-- Footer -->
@@ -58,14 +47,6 @@
     <div class="flex flex-wrap md:flex-nowrap items-center gap-3 bg-[#2c2c2c] px-4 py-3 rounded-full shadow-inner">
       <button class="text-xl text-white">+</button>
       <textarea id="userInput" rows="1" placeholder="Ask anything..." class="flex-grow bg-transparent resize-none outline-none text-white text-sm px-2 py-1"></textarea>
-      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-white">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75v1.5m0-1.5a6 6 0 006-6v-3a6 6 0 10-12 0v3a6 6 0 006 6z" />
-      </svg>
-      <div class="circle-icon">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="black" viewBox="0 0 24 24" class="w-4 h-4">
-          <path d="M5 10h1v4H5v-4zm3-2h1v8H8V8zm3 4h1v4h-1v-4zm3-3h1v7h-1V9zm3-2h1v10h-1V7z"/>
-        </svg>
-      </div>
       <button onclick="sendMessage()" class="bg-white text-black text-sm px-3 py-1 rounded-full hover:bg-gray-100 transition">Send</button>
       <button id="whatsappBtn" class="bg-white text-black px-3 py-1 rounded-full text-sm hover:bg-gray-100">WhatsApp</button>
       <button id="emailBtn" class="bg-white text-black px-3 py-1 rounded-full text-sm hover:bg-gray-100">Email</button>
@@ -76,10 +57,6 @@
 <script>
   const chatBox = document.getElementById("chatBox");
   const userInput = document.getElementById("userInput");
-
-  const messages = [
-    { role: "system", content: "You are OpenAssist AI, a helpful assistant." }
-  ];
 
   function appendMessage(content, sender) {
     const msg = document.createElement("div");
@@ -94,25 +71,48 @@
     if (!input) return;
 
     appendMessage(input, "user");
-    messages.push({ role: "user", content: input });
     userInput.value = "";
-
     appendMessage("Thinking...", "bot");
 
-    const response = await fetch("/api/chat", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ messages })
-    });
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [
+            { role: "system", content: "You are OpenAssist AI, a helpful assistant." },
+            { role: "user", content: input }
+          ]
+        })
+      });
 
-    const data = await response.json();
-    const reply = data.choices?.[0]?.message?.content || "Oops, something went wrong.";
-    chatBox.removeChild(chatBox.lastChild);
-    appendMessage(reply, "bot");
-    messages.push({ role: "assistant", content: reply });
+      const data = await response.json();
+      const reply = data.choices?.[0]?.message?.content || "Oops, something went wrong.";
+      chatBox.removeChild(chatBox.lastChild); // remove "Thinking..."
+      appendMessage(reply, "bot");
+
+    } catch (error) {
+      chatBox.removeChild(chatBox.lastChild);
+      appendMessage("Error: " + error.message, "bot");
+    }
   }
+
+  document.getElementById("whatsappBtn").addEventListener("click", () => {
+    const lastBot = [...chatBox.querySelectorAll(".bot")].pop();
+    if (lastBot) {
+      const text = encodeURIComponent(lastBot.textContent);
+      window.open(`https://wa.me/?text=${text}`, "_blank");
+    }
+  });
+
+  document.getElementById("emailBtn").addEventListener("click", () => {
+    const lastBot = [...chatBox.querySelectorAll(".bot")].pop();
+    if (lastBot) {
+      const subject = encodeURIComponent("Message from OpenAssist AI");
+      const body = encodeURIComponent(lastBot.textContent);
+      window.open(`mailto:?subject=${subject}&body=${body}`, "_blank");
+    }
+  });
 
   userInput.addEventListener("keypress", (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
