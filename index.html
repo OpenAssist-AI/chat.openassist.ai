@@ -77,33 +77,9 @@
   const chatBox = document.getElementById("chatBox");
   const userInput = document.getElementById("userInput");
 
-  async function sendMessage() {
-    const input = userInput.value.trim();
-    if (!input) return;
-
-    appendMessage(input, "user");
-    userInput.value = "";
-
-    appendMessage("Thinking...", "bot");
-
-    const response = await fetch("/api/chat", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        messages: [
-          { role: "system", content: "You are OpenAssist AI, a helpful assistant." },
-          { role: "user", content: input }
-        ]
-      })
-    });
-
-    const data = await response.json();
-    const reply = data.choices?.[0]?.message?.content || "Oops, something went wrong.";
-    chatBox.removeChild(chatBox.lastChild);
-    appendMessage(reply, "bot");
-  }
+  const messages = [
+    { role: "system", content: "You are OpenAssist AI, a helpful assistant." }
+  ];
 
   function appendMessage(content, sender) {
     const msg = document.createElement("div");
@@ -113,6 +89,31 @@
     chatBox.scrollTop = chatBox.scrollHeight;
   }
 
+  async function sendMessage() {
+    const input = userInput.value.trim();
+    if (!input) return;
+
+    appendMessage(input, "user");
+    messages.push({ role: "user", content: input });
+    userInput.value = "";
+
+    appendMessage("Thinking...", "bot");
+
+    const response = await fetch("/api/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ messages })
+    });
+
+    const data = await response.json();
+    const reply = data.choices?.[0]?.message?.content || "Oops, something went wrong.";
+    chatBox.removeChild(chatBox.lastChild);
+    appendMessage(reply, "bot");
+    messages.push({ role: "assistant", content: reply });
+  }
+
   userInput.addEventListener("keypress", (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -120,3 +121,6 @@
     }
   });
 </script>
+
+</body>
+</html>
