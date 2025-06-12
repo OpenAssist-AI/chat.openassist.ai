@@ -1,30 +1,33 @@
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Only POST requests allowed" });
-  }
-
-  const messages = req.body.messages;
-  const apiKey = process.env.OPENAI_API_KEY;
-
-  if (!apiKey) {
-    return res.status(500).json({ error: "Missing OpenAI API key in environment" });
-  }
-
-  if (!messages || !Array.isArray(messages)) {
-    return res.status(400).json({ error: "Missing or invalid messages in body" });
-  }
-
   try {
+    const messages = req.body.messages;
+
+    if (!messages || !Array.isArray(messages)) {
+      return res.status(400).json({ error: "Missing or invalid messages in request body" });
+    }
+
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      return res.status(500).json({ error: "Missing OpenAI API Key in environment variables" });
+    }
+
+    const systemPrompt = {
+      role: "system",
+      content: `You are OpenAssist AI, a smart assistant that writes sharp, clear, and emotionally intelligent replies. 
+Always reply in a ready-to-send format, especially for WhatsApp or email—no introductions or explanations, just the message the user would send.
+If the user mentions 'write a WhatsApp' or 'send an email', return only the message itself, as if the user will copy-paste it.`
+    };
+
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
+        "Authorization": `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
         model: "gpt-4o",
-        messages: messages,
-        temperature: 0.7,
+        messages: [systemPrompt, ...messages],
+        temperature: 0.7
       }),
     });
 
@@ -32,19 +35,12 @@ export default async function handler(req, res) {
 
     if (!response.ok) {
       console.error("OpenAI API error:", data);
-      return res.status(500).json({ error: "OpenAI API failed", details: data });
+      return res.status(500).json({ error: "OpenAI API error", detail: data });
     }
 
-    const content = data.choices?.[0]?.message?.content;
-
-    if (!content) {
-      return res.status(500).json({ error: "No content in OpenAI response", raw: data });
-    }
-
-    return res.status(200).json({ content }); // frontend expects { content: "..." }
-
+    return res.status(200).json(data);
   } catch (err) {
     console.error("Server error:", err);
-    return res.status(500).json({ error: "Internal error", message: err.message });
+    return res.status(500).json({ error: "Internal server error", detail: err.message });
   }
 }
