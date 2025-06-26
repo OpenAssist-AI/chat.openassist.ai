@@ -6,26 +6,70 @@
   <title>OpenAssist AI</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="icon" href="/favicon.ico" type="image/x-icon" />
+  <style>
+    body {
+      background-color: #000;
+      font-family: 'Inter', sans-serif;
+      color: #fff;
+    }
+    ::placeholder {
+      color: #888;
+    }
+    .message {
+      padding: 0.75rem 1rem;
+      border-radius: 0.75rem;
+      max-width: 80%;
+      margin-bottom: 0.5rem;
+    }
+    .user {
+      background-color: #6b21a8;
+      align-self: flex-end;
+    }
+    .bot {
+      background-color: #1f2937;
+      align-self: flex-start;
+    }
+    .preview {
+      background-color: #111827;
+      border: 1px solid #374151;
+      border-radius: 1rem;
+      padding: 1rem;
+      max-width: 80%;
+      font-size: 0.875rem;
+    }
+    .action-btns button {
+      font-size: 0.75rem;
+      margin-right: 0.5rem;
+      background-color: #2d2d2d;
+      color: #fff;
+      padding: 0.4rem 0.8rem;
+      border-radius: 0.5rem;
+      border: 1px solid #444;
+    }
+  </style>
 </head>
-<body class="bg-black text-white flex flex-col h-screen font-sans">
+<body class="flex flex-col h-screen">
 
-  <!-- Header -->
   <header class="flex justify-between items-center px-6 py-4 bg-[#111] border-b border-gray-800">
-    <div><img src="Asset 2.svg" alt="OpenAssist Logo" style="height: 26px;" /></div>
-    <button onclick="newChat()" class="text-sm bg-white text-black px-4 py-2 rounded-full font-medium hover:bg-gray-200">New Chat</button>
+    <h1 class="text-xl font-semibold">OpenAssist Chat</h1>
+    <div class="flex gap-4 items-center">
+      <button onclick="openSettings()" class="text-gray-400 hover:text-white">
+        ⚙️
+      </button>
+      <button onclick="newChat()" class="text-sm bg-white text-black px-4 py-2 rounded-full font-medium hover:bg-gray-200 transition">New Chat</button>
+    </div>
   </header>
 
-  <!-- Chat Area -->
-  <main id="chatBox" class="flex-grow overflow-y-auto px-4 py-6 flex flex-col space-y-3"></main>
+  <main id="chatBox" class="flex-grow overflow-y-auto px-4 py-6 flex flex-col space-y-4"></main>
 
-  <!-- Footer -->
-  <footer class="px-4 py-4 bg-[#1e1e1e] border-t border-gray-700">
-    <div class="flex items-center gap-2 bg-[#2c2c2c] px-4 py-3 rounded-full shadow-inner">
-      <button onclick="insertPlus()" class="text-white">+</button>
-      <textarea id="userInput" rows="1" placeholder="Type a message..." class="flex-grow bg-transparent resize-none outline-none text-white text-sm px-2 py-1"></textarea>
-      <button onclick="sendMessage()" class="bg-white text-black text-sm px-3 py-1 rounded-full hover:bg-gray-100">Send</button>
+  <footer class="border-t border-gray-800 p-4">
+    <div class="flex items-center gap-2">
+      <button onclick="addAttachment()" class="text-gray-400">➕</button>
+      <textarea id="userInput" rows="1" placeholder="Type a message..." class="flex-grow bg-gray-900 border border-gray-700 text-white rounded px-3 py-2 text-sm resize-none"></textarea>
+      <button onclick="startVoice()" class="text-gray-400">🎤</button>
+      <button onclick="sendMessage()" class="bg-white text-black px-4 py-2 rounded-full hover:bg-gray-100">Send</button>
     </div>
-    <p class="text-center text-xs text-gray-500 mt-2">OpenAssist AI can make mistakes. Check important info.</p>
+    <p class="text-xs text-center text-gray-500 mt-2">OpenAssist AI can make mistakes. Check important info.</p>
   </footer>
 
   <script>
@@ -37,91 +81,64 @@
       userInput.value = "";
     }
 
-    function insertPlus() {
-      userInput.value += "+";
-      userInput.focus();
-    }
-
-    function appendMessage(content, sender, preview = null, actions = false) {
-      const msgWrap = document.createElement("div");
-      msgWrap.className = `flex flex-col items-${sender === 'user' ? 'end' : 'start'}`;
-
+    function appendMessage(content, sender, preview) {
+      const wrapper = document.createElement("div");
+      wrapper.className = `flex flex-col ${sender === 'user' ? 'items-end' : 'items-start'}`;
       const msg = document.createElement("div");
-      msg.className = `message px-4 py-2 rounded-2xl text-sm shadow-md max-w-sm ${
-        sender === "user" ? "bg-purple-600 text-white" : "bg-gray-800 text-gray-100"
-      }`;
+      msg.className = `message ${sender}`;
       msg.textContent = content;
-      msgWrap.appendChild(msg);
-
+      wrapper.appendChild(msg);
       if (preview) {
         const box = document.createElement("div");
-        box.className = "bg-gray-900 border border-gray-700 rounded-xl p-3 text-sm text-white space-y-1 mt-2 max-w-sm";
+        box.className = "preview";
         box.innerHTML = `
-          <div class="text-xs text-gray-400">To: <span class="text-white font-medium">${preview.to}</span></div>
-          <div class="bg-black px-3 py-2 rounded-lg border border-gray-700">${preview.body}</div>
-          <div class="flex items-center text-xs text-green-500 mt-1">
-            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
-            ${preview.status}
-          </div>
+          <div class="text-xs text-gray-400 mb-1">To: <span class="text-white font-medium">${preview.to}</span></div>
+          <div class="bg-black px-3 py-2 rounded border border-gray-700 mb-1">${preview.body}</div>
+          <div class="text-xs text-green-500">✔ ${preview.status}</div>
         `;
-        msgWrap.appendChild(box);
-      }
+        wrapper.appendChild(box);
 
-      if (actions) {
-        const buttons = document.createElement("div");
-        buttons.className = "flex gap-2 mt-2";
-        ["Email", "WhatsApp", "Calendar"].forEach(label => {
-          const btn = document.createElement("button");
-          btn.className = "bg-gray-700 text-xs px-3 py-1 rounded-full";
-          btn.textContent = label;
-          buttons.appendChild(btn);
-        });
-        msgWrap.appendChild(buttons);
+        const actions = document.createElement("div");
+        actions.className = "action-btns mt-1";
+        actions.innerHTML = `
+          <button onclick="sendViaEmail('${preview.body}')">Email</button>
+          <button onclick="sendViaWhatsApp('${preview.body}')">WhatsApp</button>
+        `;
+        wrapper.appendChild(actions);
       }
-
-      chatBox.appendChild(msgWrap);
+      chatBox.appendChild(wrapper);
       chatBox.scrollTop = chatBox.scrollHeight;
     }
 
-    async function sendMessage() {
+    function sendViaWhatsApp(text) {
+      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+    }
+
+    function sendViaEmail(text) {
+      const subject = encodeURIComponent("Message from OpenAssist AI");
+      const body = encodeURIComponent(text);
+      window.open(`mailto:?subject=${subject}&body=${body}`, '_blank');
+    }
+
+    function sendMessage() {
       const input = userInput.value.trim();
       if (!input) return;
+      const to = extractRecipient(input);
       appendMessage(input, "user");
       userInput.value = "";
 
-      appendMessage("Thinking...", "bot");
-
-      try {
-        const response = await fetch("/api/chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            messages: [
-              { role: "system", content: "You are OpenAssist AI, a helpful assistant." },
-              { role: "user", content: input }
-            ]
-          })
+      setTimeout(() => {
+        appendMessage("Here's your generated message:", "bot", {
+          to: to || "Email, WhatsApp, or Text",
+          body: "This is a preview of the message that will be sent. You can review or edit before sending.",
+          status: "Message generated and ready to send."
         });
+      }, 500);
+    }
 
-        const data = await response.json();
-        const reply = data.choices?.[0]?.message?.content || "Oops, something went wrong.";
-        chatBox.removeChild(chatBox.lastChild);
-
-        appendMessage(
-          "Here’s your generated message:",
-          "bot",
-          {
-            to: "Email, WhatsApp, or Text",
-            body: reply,
-            status: "Message generated and ready to send."
-          },
-          true
-        );
-      } catch (err) {
-        console.error("API error:", err);
-        chatBox.removeChild(chatBox.lastChild);
-        appendMessage("An error occurred. Check the console log for details.", "bot");
-      }
+    function extractRecipient(text) {
+      const match = text.match(/(?:email|message|text) (?:to )?(?:my )?(\w+)/i);
+      return match ? match[1] : "";
     }
 
     userInput.addEventListener("keypress", (e) => {
@@ -130,6 +147,18 @@
         sendMessage();
       }
     });
+
+    function openSettings() {
+      alert("Settings not available in this static version.");
+    }
+
+    function startVoice() {
+      alert("Voice input coming soon.");
+    }
+
+    function addAttachment() {
+      alert("Add attachments coming soon.");
+    }
   </script>
 </body>
 </html>
