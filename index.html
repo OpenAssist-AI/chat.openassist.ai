@@ -1,128 +1,144 @@
-// Finalized version for OpenAssist V2 – deployable HTML version
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OpenAssist Chat</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="icon" href="/favicon.ico" type="image/x-icon" />
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+      body {
+        background-color: black;
+        color: white;
+        font-family: Inter, sans-serif;
+      }
+    </style>
+  </head>
+  <body class="flex flex-col min-h-screen">
+    <!-- Header -->
+    <header class="p-4 border-b border-gray-800 flex justify-between items-center">
+      <img src="/Asset 2.svg" alt="OpenAssist Logo" class="h-7" />
+      <div class="flex items-center gap-3">
+        <button id="settingsBtn" class="text-gray-400 hover:text-white">
+          <i data-lucide="settings" class="w-5 h-5"></i>
+        </button>
+        <button onclick="newChat()" class="text-sm text-gray-400 hover:text-white">New Chat</button>
+      </div>
+    </header>
 
-import { useState } from "react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import {
-  Mic,
-  Send,
-  Plus,
-  MessageSquare,
-  Mail,
-  Settings,
-  ArrowLeft,
-  CheckCircle,
-} from "lucide-react";
+    <!-- Main Chat -->
+    <main id="chatBox" class="flex-1 overflow-y-auto px-4 py-6 space-y-6"></main>
 
-export default function ChatOpenAssist() {
-  const [input, setInput] = useState("");
-  const [messages, setMessages] = useState([
-    { role: "assistant", content: "Hi! How can I help you today?" },
-  ]);
-  const [showSettings, setShowSettings] = useState(false);
+    <!-- Footer -->
+    <footer class="border-t border-gray-800 p-4">
+      <div class="flex items-center gap-2">
+        <button class="text-gray-400" onclick="newChat()">
+          <i data-lucide="plus" class="w-5 h-5"></i>
+        </button>
+        <textarea
+          id="userInput"
+          placeholder="Type a message..."
+          class="flex-1 bg-gray-900 text-white border border-gray-700 rounded px-3 py-2 text-sm outline-none resize-none"
+          rows="1"
+        ></textarea>
+        <button class="text-gray-400">
+          <i data-lucide="mic" class="w-5 h-5"></i>
+        </button>
+        <button onclick="sendMessage()" class="text-white">
+          <i data-lucide="send" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <p class="text-xs text-center text-gray-500 mt-2">
+        OpenAssist AI can make mistakes. Check important info.
+      </p>
+    </footer>
 
-  const handleSend = () => {
-    if (!input.trim()) return;
-    const parsed = input.replace(/email to (.+)/i, (_, name) => `To: ${name}`);
-    setMessages([
-      ...messages,
-      { role: "user", content: parsed },
-      {
-        role: "assistant",
-        content: "Here's your generated message:",
-        preview: {
-          to: "Email, WhatsApp, or Text",
-          body:
-            "This is a preview of the message that will be sent. You can review or edit before sending.",
-          status: "Message generated and ready to send.",
-        },
-        actions: true,
-      },
-    ]);
-    setInput("");
-  };
+    <script>
+      lucide.createIcons();
 
-  return (
-    <div className="min-h-screen bg-black text-white flex flex-col">
-      <header className="p-4 border-b border-gray-800 flex justify-between items-center">
-        <img src="/Asset 2.svg" alt="OpenAssist Logo" className="h-6" />
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon">
-            <Settings className="w-5 h-5 text-gray-400" />
-          </Button>
-          <Button variant="ghost" className="text-gray-400 hover:text-white text-sm">
-            New Chat
-          </Button>
-        </div>
-      </header>
+      const chatBox = document.getElementById("chatBox");
+      const userInput = document.getElementById("userInput");
 
-      <main className="flex-1 overflow-y-auto px-4 py-6 space-y-6">
-        {messages.map((msg, i) => (
-          <div
-            key={i}
-            className={`flex flex-col space-y-2 ${
-              msg.role === "user" ? "items-end" : "items-start"
-            }`}
-          >
-            <div
-              className={`max-w-sm px-4 py-2 rounded-2xl text-sm shadow-md ${
-                msg.role === "user"
-                  ? "bg-purple-600 text-white"
-                  : "bg-gray-800 text-gray-100"
-              }`}
-            >
-              {msg.content}
+      function newChat() {
+        chatBox.innerHTML = "";
+        userInput.value = "";
+      }
+
+      function appendMessage(content, sender = "bot", preview = null) {
+        const container = document.createElement("div");
+        container.className = `flex flex-col space-y-2 ${
+          sender === "user" ? "items-end" : "items-start"
+        }`;
+
+        const message = document.createElement("div");
+        message.className = `max-w-sm px-4 py-2 rounded-2xl text-sm shadow-md ${
+          sender === "user"
+            ? "bg-purple-600 text-white"
+            : "bg-gray-800 text-gray-100"
+        }`;
+        message.textContent = content;
+        container.appendChild(message);
+
+        if (preview) {
+          const previewBox = document.createElement("div");
+          previewBox.className =
+            "bg-gray-900 border border-gray-700 rounded-xl p-3 text-sm text-white space-y-1 max-w-sm";
+          previewBox.innerHTML = `
+            <div class="text-xs text-gray-400">To: <span class="text-white font-medium">${preview.to}</span></div>
+            <div class="bg-black px-3 py-2 rounded-lg border border-gray-700">${preview.body}</div>
+            <div class="flex items-center text-xs text-green-500 mt-1">
+              <i data-lucide="check-circle" class="w-4 h-4 mr-1"></i> ${preview.status}
             </div>
-            {msg.preview && (
-              <div className="bg-gray-900 border border-gray-700 rounded-xl p-3 text-sm text-white space-y-1 max-w-sm">
-                <div className="text-xs text-gray-400">
-                  To: <span className="text-white font-medium">{msg.preview.to}</span>
-                </div>
-                <div className="bg-black px-3 py-2 rounded-lg border border-gray-700">
-                  {msg.preview.body}
-                </div>
-                <div className="flex items-center text-xs text-green-500 mt-1">
-                  <CheckCircle className="w-4 h-4 mr-1" /> {msg.preview.status}
-                </div>
-              </div>
-            )}
-            {msg.actions && (
-              <div className="flex gap-2 mt-2">
-                <Button size="sm" variant="secondary" className="text-xs">
-                  <Mail className="w-4 h-4 mr-1" /> Email
-                </Button>
-                <Button size="sm" variant="secondary" className="text-xs">
-                  <MessageSquare className="w-4 h-4 mr-1" /> WhatsApp
-                </Button>
-              </div>
-            )}
-          </div>
-        ))}
-      </main>
+            <div class="flex gap-2 mt-2">
+              <button class="bg-gray-700 text-xs px-3 py-1 rounded flex items-center gap-1" onclick="sendEmail('${preview.body}')">
+                <i data-lucide="mail" class="w-4 h-4"></i> Email
+              </button>
+              <button class="bg-gray-700 text-xs px-3 py-1 rounded flex items-center gap-1" onclick="sendWhatsApp('${preview.body}')">
+                <i data-lucide="message-square" class="w-4 h-4"></i> WhatsApp
+              </button>
+            </div>
+          `;
+          container.appendChild(previewBox);
+          lucide.createIcons({ icons: previewBox });
+        }
 
-      <footer className="border-t border-gray-800 p-4">
-        <div className="flex items-center gap-2">
-          <Button size="icon" variant="ghost">
-            <Plus className="w-5 h-5 text-gray-400" />
-          </Button>
-          <Input
-            className="flex-1 bg-gray-900 border-gray-700 text-white"
-            placeholder="Type a message..."
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSend()}
-          />
-          <Button size="icon" variant="ghost">
-            <Mic className="w-5 h-5 text-gray-400" />
-          </Button>
-          <Button size="icon" onClick={handleSend}>
-            <Send className="w-5 h-5" />
-          </Button>
-        </div>
-        <p className="text-xs text-center text-gray-500 mt-2">
-          OpenAssist AI can make mistakes. Check important info.
-        </p>
-      </footer>
-    </div>
-  );
-}
+        chatBox.appendChild(container);
+        chatBox.scrollTop = chatBox.scrollHeight;
+      }
+
+      async function sendMessage() {
+        const input = userInput.value.trim();
+        if (!input) return;
+
+        appendMessage(input, "user");
+        userInput.value = "";
+
+        // Dummy response for now
+        const preview = {
+          to: extractRecipient(input),
+          body: "This is a preview of the message that will be sent. You can review or edit before sending.",
+          status: "Message generated and ready to send."
+        };
+
+        appendMessage("Here's your generated message:", "bot", preview);
+      }
+
+      function extractRecipient(input) {
+        const match = input.match(/(?:email|message|text|whatsapp) (?:to )?(.*)/i);
+        return match ? match[1] : "Email, WhatsApp, or Text";
+      }
+
+      function sendEmail(body) {
+        const subject = encodeURIComponent("Message from OpenAssist AI");
+        const emailBody = encodeURIComponent(body);
+        window.open(`mailto:?subject=${subject}&body=${emailBody}`, "_blank");
+      }
+
+      function sendWhatsApp(body) {
+        const text = encodeURIComponent(body);
+        window.open(`https://wa.me/?text=${text}`, "_blank");
+      }
+    </script>
+  </body>
+</html>
